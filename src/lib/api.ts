@@ -8,7 +8,8 @@ import {
 // ─── Provider-specific call stubs ───────────────────────────────────────────
 
 /**
- * Call OpenAI Chat Completions API (gpt-4o).
+ * Call OpenAI Chat Completions API.
+ * Uses req.model to determine which model to call (gpt-4o, gpt-5, etc).
  */
 async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
     if (!req.apiKey) {
@@ -23,7 +24,7 @@ async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
                 Authorization: `Bearer ${req.apiKey}`,
             },
             body: JSON.stringify({
-                model: "gpt-4o",
+                model: req.model,
                 messages: req.messages.map((m) => ({
                     role: m.role,
                     content: m.content,
@@ -47,7 +48,8 @@ async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
 }
 
 /**
- * Call Google Gemini API (gemini-1.5-pro).
+ * Call Google Gemini API.
+ * Uses req.model to construct the endpoint URL.
  */
 async function callGemini(req: ChatRequest): Promise<ChatResponse> {
     if (!req.apiKey) {
@@ -55,7 +57,8 @@ async function callGemini(req: ChatRequest): Promise<ChatResponse> {
     }
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${req.apiKey}`;
+        // Construct URL based on the selected model ID
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${req.model}:generateContent?key=${req.apiKey}`;
 
         const res = await fetch(url, {
             method: "POST",
@@ -90,22 +93,21 @@ async function callGemini(req: ChatRequest): Promise<ChatResponse> {
 }
 
 /**
- * Call Anthropic Messages API (claude-3-5-sonnet).
- * Note: Anthropic API requires a proxy or backend relay to avoid CORS issues if called directly from browser,
- * but Next.js Server Actions or API routes handle this securely.
- * Since this is a client-side fetch in this specific demo architecture, 
- * we must use a proxy or accept CORS limitations.
- * However, for this VPS deployment, let's try direct fetch assuming user might use a proxy or Next.js API route.
- * 
- * ACTUALLY: Browser-based direct calls to Anthropic will fail CORS.
- * We should really move this logic to a Next.js Server Action / API Route for security and CORS.
- * But to keep it simple as requested, let's implement the fetch and see.
- * (If CORS fails, we'll need to move to /api/chat route).
+ * Call Anthropic Messages API.
  */
 async function callAnthropic(req: ChatRequest): Promise<ChatResponse> {
     if (!req.apiKey) {
         throw new Error("Anthropic API Key is missing.");
     }
+
+    // Map internal model IDs to Anthropic API model strings if necessary.
+    // For now, we assume req.model works or map known legacy ones.
+    // claude-3-5-sonnet -> claude-3-5-sonnet-20240620
+    let apiModel = req.model as string;
+    if (req.model === "claude-3-5-sonnet") {
+        apiModel = "claude-3-5-sonnet-20240620";
+    }
+    // "claude-4-6-opus" will be passed as is, assuming it exists in 2026.
 
     try {
         const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -117,7 +119,7 @@ async function callAnthropic(req: ChatRequest): Promise<ChatResponse> {
                 "anthropic-dangerous-direct-browser-access": "true", // Required for client-side calls
             },
             body: JSON.stringify({
-                model: "claude-3-5-sonnet-20240620",
+                model: apiModel,
                 max_tokens: 1024,
                 messages: req.messages.map((m) => ({
                     role: m.role,
@@ -211,8 +213,13 @@ export async function sendChatRequest(
 
     const handlers: Record<ModelId, (r: ChatRequest) => Promise<ChatResponse>> = {
         "gpt-4o": callOpenAI,
+        "gpt-5": callOpenAI,
+        "gpt-5-thinking": callOpenAI,
         "gemini-1.5-pro": callGemini,
+        "gemini-3.0-pro": callGemini,
+        "gemini-3.0-pro-thinking": callGemini,
         "claude-3-5-sonnet": callAnthropic,
+        "claude-4-6-opus": callAnthropic,
         "dall-e-3": callDallE,
         "nano-banana": callNanoBanana,
     };
