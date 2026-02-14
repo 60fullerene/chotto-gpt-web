@@ -16,8 +16,9 @@ async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
     // --- MOCK IMPLEMENTATION ---
     await simulateLatency();
     const lastMessage = req.messages[req.messages.length - 1];
+    const modelName = req.model === "gpt-5" ? "GPT-5 (Preview)" : "GPT-4o";
     return {
-        content: `**[GPT-4o Mock]**\n\nあなたのメッセージ「${lastMessage.content}」を受け取りました。\n\n実際のAPIキーを設定すれば、OpenAIのGPT-4oモデルが応答します。`,
+        content: `**[${modelName} Mock]**\n\nあなたのメッセージ「${lastMessage.content}」を受け取りました。\n\n実際のAPIキーを設定すれば、OpenAIの${modelName}モデルが応答します。`,
     };
     // --- PRODUCTION EXAMPLE ---
     // const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -41,8 +42,10 @@ async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
 async function callGemini(req: ChatRequest): Promise<ChatResponse> {
     await simulateLatency();
     const lastMessage = req.messages[req.messages.length - 1];
+    const modelName =
+        req.model === "gemini-3.0-pro" ? "Gemini 3.0 Pro" : "Gemini 1.5 Pro";
     return {
-        content: `**[Gemini 1.5 Pro Mock]**\n\n「${lastMessage.content}」について考えてみました。\n\n実際のAPIキーを設定すれば、Google Geminiが応答します。\n\n- ポイント1: モックレスポンスです\n- ポイント2: Markdownもサポートしています`,
+        content: `**[${modelName} Mock]**\n\n「${lastMessage.content}」について考えてみました。\n\n実際のAPIキーを設定すれば、Google ${modelName}が応答します。\n\n- ポイント1: モックレスポンスです\n- ポイント2: Markdownもサポートしています`,
     };
 }
 
@@ -52,8 +55,12 @@ async function callGemini(req: ChatRequest): Promise<ChatResponse> {
 async function callAnthropic(req: ChatRequest): Promise<ChatResponse> {
     await simulateLatency();
     const lastMessage = req.messages[req.messages.length - 1];
+    const modelName =
+        req.model === "claude-4-6-sonnet"
+            ? "Claude 4.6 Sonnet"
+            : "Claude 3.5 Sonnet";
     return {
-        content: `**[Claude 3.5 Sonnet Mock]**\n\nご質問「${lastMessage.content}」ありがとうございます。\n\n> これはモックレスポンスです。実際のAPIキーを設定すれば、Anthropic Claude が応答します。\n\n\`\`\`python\nprint("Hello from Claude!")\n\`\`\``,
+        content: `**[${modelName} Mock]**\n\nご質問「${lastMessage.content}」ありがとうございます。\n\n> これはモックレスポンスです。実際のAPIキーを設定すれば、Anthropic ${modelName} が応答します。\n\n\`\`\`python\nprint("Hello from ${modelName}!")\n\`\`\``,
     };
 }
 
@@ -115,8 +122,11 @@ export async function sendChatRequest(
 
     const handlers: Record<ModelId, (r: ChatRequest) => Promise<ChatResponse>> = {
         "gpt-4o": callOpenAI,
+        "gpt-5": callOpenAI,
         "gemini-1.5-pro": callGemini,
+        "gemini-3.0-pro": callGemini,
         "claude-3-5-sonnet": callAnthropic,
+        "claude-4-6-sonnet": callAnthropic,
         "dall-e-3": callDallE,
         "nano-banana": callNanoBanana,
     };

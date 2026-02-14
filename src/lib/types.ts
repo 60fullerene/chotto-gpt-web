@@ -2,7 +2,13 @@
 
 export type Provider = "openai" | "google" | "anthropic";
 
-export type TextModelId = "gpt-4o" | "gemini-1.5-pro" | "claude-3-5-sonnet";
+export type TextModelId =
+    | "gpt-4o"
+    | "gpt-5"
+    | "gemini-1.5-pro"
+    | "gemini-3.0-pro"
+    | "claude-3-5-sonnet"
+    | "claude-4-6-sonnet";
 export type ImageModelId = "dall-e-3" | "nano-banana";
 export type ModelId = TextModelId | ImageModelId;
 
@@ -16,6 +22,7 @@ export interface ModelOption {
 export const MODELS: ModelOption[] = [
     // Text Models
     { id: "gpt-4o", label: "GPT-4o", provider: "openai", category: "text" },
+    { id: "gpt-5", label: "GPT-5 (Preview)", provider: "openai", category: "text" },
     {
         id: "gemini-1.5-pro",
         label: "Gemini 1.5 Pro",
@@ -23,8 +30,20 @@ export const MODELS: ModelOption[] = [
         category: "text",
     },
     {
+        id: "gemini-3.0-pro",
+        label: "Gemini 3.0 Pro",
+        provider: "google",
+        category: "text",
+    },
+    {
         id: "claude-3-5-sonnet",
         label: "Claude 3.5 Sonnet",
+        provider: "anthropic",
+        category: "text",
+    },
+    {
+        id: "claude-4-6-sonnet",
+        label: "Claude 4.6 Sonnet",
         provider: "anthropic",
         category: "text",
     },
