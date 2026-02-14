@@ -7,29 +7,46 @@ import {
 
 // ─── Provider-specific call stubs ───────────────────────────────────────────
 
+// ─── Provider-specific call stubs ───────────────────────────────────────────
+
 /**
  * Call OpenAI Chat Completions API.
  * Uses req.model to determine which model to call (gpt-4o, gpt-5, etc).
+ * Handles 'gpt-5-thinking' by setting reasoning_effort to 'high'.
  */
 async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
     if (!req.apiKey) {
         throw new Error("OpenAI API Key is missing. Please check settings.");
     }
 
+    let modelName = req.model;
+    let reasoningEffort: string | undefined;
+
+    if (req.model === "gpt-5-thinking") {
+        modelName = "gpt-5";
+        reasoningEffort = "high";
+    }
+
     try {
+        const body: any = {
+            model: modelName,
+            messages: req.messages.map((m) => ({
+                role: m.role,
+                content: m.content,
+            })),
+        };
+
+        if (reasoningEffort) {
+            body.reasoning_effort = reasoningEffort;
+        }
+
         const res = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${req.apiKey}`,
             },
-            body: JSON.stringify({
-                model: req.model,
-                messages: req.messages.map((m) => ({
-                    role: m.role,
-                    content: m.content,
-                })),
-            }),
+            body: JSON.stringify(body),
         });
 
         if (!res.ok) {
@@ -50,27 +67,44 @@ async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
 /**
  * Call Google Gemini API.
  * Uses req.model to construct the endpoint URL.
+ * Handles 'gemini-3.0-pro-thinking' by adding thinking_level param.
  */
 async function callGemini(req: ChatRequest): Promise<ChatResponse> {
     if (!req.apiKey) {
         throw new Error("Google Gemini API Key is missing.");
     }
 
+    let modelName = req.model;
+    let thinkingLevel: string | undefined;
+
+    if (req.model === "gemini-3.0-pro-thinking") {
+        modelName = "gemini-3.0-pro";
+        thinkingLevel = "high";
+    }
+
     try {
         // Construct URL based on the selected model ID
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${req.model}:generateContent?key=${req.apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${req.apiKey}`;
+
+        const body: any = {
+            contents: req.messages.map((m) => ({
+                role: m.role === "user" ? "user" : "model",
+                parts: [{ text: m.content }],
+            })),
+        };
+
+        if (thinkingLevel) {
+            body.generationConfig = {
+                thinking_level: thinkingLevel,
+            };
+        }
 
         const res = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-                contents: req.messages.map((m) => ({
-                    role: m.role === "user" ? "user" : "model",
-                    parts: [{ text: m.content }],
-                })),
-            }),
+            body: JSON.stringify(body),
         });
 
         if (!res.ok) {
@@ -100,14 +134,13 @@ async function callAnthropic(req: ChatRequest): Promise<ChatResponse> {
         throw new Error("Anthropic API Key is missing.");
     }
 
-    // Map internal model IDs to Anthropic API model strings if necessary.
-    // For now, we assume req.model works or map known legacy ones.
-    // claude-3-5-sonnet -> claude-3-5-sonnet-20240620
+    // Map internal model IDs to Anthropic API model strings.
     let apiModel = req.model as string;
     if (req.model === "claude-3-5-sonnet") {
         apiModel = "claude-3-5-sonnet-20240620";
+    } else if (req.model === "claude-4-6-opus") {
+        apiModel = "claude-opus-4-6";
     }
-    // "claude-4-6-opus" will be passed as is, assuming it exists in 2026.
 
     try {
         const res = await fetch("https://api.anthropic.com/v1/messages", {
