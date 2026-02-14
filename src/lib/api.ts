@@ -16,6 +16,13 @@ async function callOpenAI(req: ChatRequest): Promise<ChatResponse> {
     // --- MOCK IMPLEMENTATION ---
     await simulateLatency();
     const lastMessage = req.messages[req.messages.length - 1];
+
+    if (req.model === "gpt-5-thinking") {
+        return {
+            content: `**[GPT-5 Thinking Mock]**\n\n> **Thinking Process** 💭\n> 1. Analyzing request: "${lastMessage.content}"\n> 2. Accessing knowledge base...\n> 3. Formulating comprehensive answer...\n\n(Here is the final output from GPT-5 with reasoning capabilities.)`,
+        };
+    }
+
     const modelName = req.model === "gpt-5" ? "GPT-5 (Preview)" : "GPT-4o";
     return {
         content: `**[${modelName} Mock]**\n\nあなたのメッセージ「${lastMessage.content}」を受け取りました。\n\n実際のAPIキーを設定すれば、OpenAIの${modelName}モデルが応答します。`,
@@ -123,6 +130,7 @@ export async function sendChatRequest(
     const handlers: Record<ModelId, (r: ChatRequest) => Promise<ChatResponse>> = {
         "gpt-4o": callOpenAI,
         "gpt-5": callOpenAI,
+        "gpt-5-thinking": callOpenAI,
         "gemini-1.5-pro": callGemini,
         "gemini-3.0-pro": callGemini,
         "claude-3-5-sonnet": callAnthropic,

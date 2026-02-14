@@ -5,6 +5,7 @@ export type Provider = "openai" | "google" | "anthropic";
 export type TextModelId =
     | "gpt-4o"
     | "gpt-5"
+    | "gpt-5-thinking"
     | "gemini-1.5-pro"
     | "gemini-3.0-pro"
     | "claude-3-5-sonnet"
@@ -23,6 +24,12 @@ export const MODELS: ModelOption[] = [
     // Text Models
     { id: "gpt-4o", label: "GPT-4o", provider: "openai", category: "text" },
     { id: "gpt-5", label: "GPT-5 (Preview)", provider: "openai", category: "text" },
+    {
+        id: "gpt-5-thinking",
+        label: "GPT-5 Thinking",
+        provider: "openai",
+        category: "text",
+    },
     {
         id: "gemini-1.5-pro",
         label: "Gemini 1.5 Pro",
